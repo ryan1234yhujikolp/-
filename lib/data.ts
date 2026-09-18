@@ -57,9 +57,11 @@ export function nextStepFor(role: RoleKey, step: string): string | null {
   const m = order[role]; return m && m.from === step ? m.to : null;
 }
 export const isTeacher = (r: RoleKey) => !!ROLES[r].isTeacher;
-export const canEnterExecutives = (u: any) =>
-  !!u && u.status === "active" && (u.role === "assistant" || (!isTeacher(u.role) && ROLES[u.role].level >= 1) || isTeacher(u.role) || u.role === "standing_admin");
-export const canWriteChat = (u: any, room: "executives" | "all") => {
+type UserLike = { status?: string; role?: RoleKey };
+export const canEnterExecutives = (u: UserLike | null | undefined) =>
+  !!u && u.status === "active" && !!u.role &&
+  (u.role === "assistant" || (!isTeacher(u.role) && ROLES[u.role].level >= 1) || isTeacher(u.role) || u.role === "standing_admin");
+export const canWriteChat = (u: UserLike | null | undefined, room: "executives" | "all") => {
   if (!u || u.status !== "active") return false;
   if (isTeacher(u.role)) return false;
   if (room === "executives") return canEnterExecutives(u);
