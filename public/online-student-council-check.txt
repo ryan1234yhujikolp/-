@@ -1,3 +1,0 @@
-ONLINE STUDENT COUNCIL DEPLOY CHECK
-site: online-student-council
-siyoon: removed from project/site name
