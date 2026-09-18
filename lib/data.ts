@@ -63,6 +63,7 @@ export const canEnterExecutives = (u: UserLike | null | undefined) =>
   (u.role === "assistant" || (!isTeacher(u.role) && ROLES[u.role].level >= 1) || isTeacher(u.role) || u.role === "standing_admin");
 export const canWriteChat = (u: UserLike | null | undefined, room: "executives" | "all") => {
   if (!u || u.status !== "active") return false;
+  if (!u.role) return false;
   if (isTeacher(u.role)) return false;
   if (room === "executives") return canEnterExecutives(u);
   return true;
