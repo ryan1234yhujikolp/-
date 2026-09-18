@@ -551,6 +551,7 @@ function AdminPage({ me, setMessage }: { me: Profile; setMessage: (v: string) =>
   const [busy, setBusy] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkStatus, setBulkStatus] = useState("");
+  const [generatedAccounts, setGeneratedAccounts] = useState<any[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -608,7 +609,27 @@ function AdminPage({ me, setMessage }: { me: Profile; setMessage: (v: string) =>
     setBulkBusy(false); refresh();
     setMessage(`일괄생성 완료 · 성공 ${created} · 실패 ${failed}`);
   };
-  const uploadCsv = async (file: File) => {
+  const downloadAccountsCsv = () => {
+    if (!generatedAccounts.length) return setMessage("먼저 1,260명 계정을 생성 대상으로 준비해줘.");
+    const rows = [
+      ["학년","반","번호","아이디","비밀번호","이름","역할"],
+      ...generatedAccounts.map((a:any) => {
+        const m = String(a.login_id).match(/^(\\d)-(\\d{2})-(\\d{2})$/);
+        return m
+          ? [m[1], String(Number(m[2])), String(Number(m[3])), a.login_id, a.password, a.name, a.role]
+          : ["","", "", a.login_id, a.password, a.name, a.role];
+      })
+    ];
+    const csv = rows.map((row:any[]) => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\\n");
+    const blob = new Blob(["\\ufeff", csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "온라인학생회_생성계정표_1260명.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const uploadCsv = async (file: File) =>
     try { const raw=await file.text(); const accounts=parseCsv(raw); await createBulk(accounts); }
     catch(e){setMessage(e instanceof Error?e.message:"CSV 읽기 실패");}
   };
@@ -641,7 +662,7 @@ function AdminPage({ me, setMessage }: { me: Profile; setMessage: (v: string) =>
       <div className="card"><h2 style={{ marginTop: 0 }}>⚙️ 관리자</h2><div className="muted">관리자 전용 화면이야. 현재 계정: {me.name}.</div></div>
       <div className="grid2">
         <div className="card"><h3>교직원 계정</h3><input className="input" placeholder="아이디" value={loginId} onChange={e=>setLoginId(e.target.value)} style={{marginBottom:8}} /><input className="input" placeholder="이름" value={name} onChange={e=>setName(e.target.value)} style={{marginBottom:8}} /><input className="input" placeholder="비밀번호 8자 이상" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{marginBottom:8}} /><select className="select" value={role} onChange={e=>setRole(e.target.value as RoleKey)}><option value="teacher_jachi">자치부장 선생님</option><option value="teacher_gyogam">교감선생님</option><option value="teacher_gyojang">교장선생님</option></select><button className="btn" style={{marginTop:10}} disabled={busy} onClick={saveTeacher}>{busy?"생성 중…":"교직원 계정 생성"}</button></div>
-        <div className="card"><h3>🚀 1,260명 계정 생성</h3><div className="muted">3~6학년 학생 1,200명 + 4~6학년 각 반 임원 2명씩 60명.</div><div className="row" style={{marginTop:10}}><button className="btn" disabled={bulkBusy} onClick={()=>createBulk(generatePreset())}>{bulkBusy?"생성 중…":"1,260명 생성 시작"}</button><button className="btn ghost" disabled={bulkBusy} onClick={()=>fileRef.current?.click()}>CSV로 생성</button><input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={e=>{const f=e.target.files?.[0]; if(f) uploadCsv(f); e.currentTarget.value="";}} /></div>{bulkStatus&&<div className="muted" style={{marginTop:8}}>{bulkStatus}</div>}</div>
+        <div className="card"><h3>🚀 1,260명 계정 생성</h3><div className="muted">3~6학년 학생 1,200명 + 4~6학년 각 반 임원 2명씩 60명.</div><div className="row" style={{marginTop:10}}><button className="btn" disabled={bulkBusy} onClick={()=>{const accounts=generatePreset(); setGeneratedAccounts(accounts); createBulk(accounts);}}>{bulkBusy?"생성 중…":"1,260명 생성 시작"}</button><button className="btn ghost" disabled={bulkBusy} onClick={()=>fileRef.current?.click()}>CSV로 생성</button><button className="btn ghost" disabled={bulkBusy || !generatedAccounts.length} onClick={downloadAccountsCsv}>계정표 다운로드</button><input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={e=>{const f=e.target.files?.[0]; if(f) uploadCsv(f); e.currentTarget.value="";}} /></div>{bulkStatus&&<div className="muted" style={{marginTop:8}}>{bulkStatus}</div>}{generatedAccounts.length>0&&<div className="muted" style={{marginTop:8}}>생성 대상 {generatedAccounts.length.toLocaleString()}명의 아이디·비밀번호 표를 다운로드할 수 있어.</div>}</div>
       </div>
       <div className="card"><h3>👥 계정 관리</h3><div style={{overflowX:"auto"}}><table className="table"><thead><tr><th>아이디</th><th>이름</th><th>역할</th><th>상태</th><th>부서/팀</th><th>변경</th></tr></thead><tbody>{profiles.map(p=><tr key={p.id}><td>{p.login_id}</td><td>{p.name}</td><td>{roleLabel(p.role)}</td><td>{p.status}</td><td>{deptName(p.dept_id??undefined)} / {teamName(p.team_id??undefined)}</td><td><div className="row"><select className="select" value={p.role} onChange={e=>updateProfile(p,{role:e.target.value as RoleKey})}>{Object.entries(ROLES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select><select className="select" value={p.status} onChange={e=>updateProfile(p,{status:e.target.value as Profile["status"]})}><option value="active">active</option><option value="pending">pending</option><option value="suspended">suspended</option></select></div></td></tr>)}</tbody></table></div></div>
     </>
