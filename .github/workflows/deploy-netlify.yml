@@ -2,8 +2,7 @@ name: Deploy online student council
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,8 +15,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - run: npm install --no-audit --no-fund
       - run: npm run build
-      - name: Deploy to Netlify
-        run: npx -y netlify-cli@latest deploy --prod --allow-anonymous --site-name online-student-council-live --dir ./out --no-build
+      - name: Deploy to managed Netlify project
+        run: npx -y netlify-cli@latest deploy --prod --allow-anonymous --site 07b713cc-73fe-4937-822a-3d74c3d2417e --dir ./out --no-build
