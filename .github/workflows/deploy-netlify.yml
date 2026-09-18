@@ -8,9 +8,17 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: netlify-production
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: 07b713cc-73fe-4937-822a-3d74c3d2417e
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,5 +26,7 @@ jobs:
           node-version: 24
       - run: npm install --no-audit --no-fund
       - run: npm run build
-      - name: Deploy to managed Netlify project
-        run: npx -y netlify-cli@latest deploy --prod --allow-anonymous --site 07b713cc-73fe-4937-822a-3d74c3d2417e --dir ./out --no-build
+      - name: Deploy to Netlify production
+        run: |
+          test -n "$NETLIFY_AUTH_TOKEN"
+          npx -y netlify-cli@latest deploy --prod --dir ./out --no-build
