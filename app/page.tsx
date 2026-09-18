@@ -195,7 +195,12 @@ function Login({ onMessage, message }: { onMessage: (v: string) => void; message
     e.preventDefault();
     setBusy(true);
     onMessage("");
-    const email = `${loginId.trim().toLowerCase()}@jagum-office.local`;
+    const normalizedLoginId = loginId.trim().toLowerCase();
+    const email = normalizedLoginId.includes("@")
+      ? normalizedLoginId
+      : normalizedLoginId === "siyoon.com123"
+        ? "siyoon.com123@kakao.com"
+        : `${normalizedLoginId}@jagum-office.local`;
     if (signup) {
       if (password.length < 8) { onMessage("비밀번호는 8자 이상이어야 해."); setBusy(false); return; }
       const { error } = await supabase.auth.signUp({
