@@ -597,7 +597,7 @@ function AdminPage({ me, setMessage }: { me: Profile; setMessage: (v: string) =>
     let created=0, failed=0;
     for (let i=0;i<accounts.length;i+=50) {
       const batch=accounts.slice(i,i+50);
-      const res=await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-bulk-users`,{
+      const res=await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://okbhmcsauzritskouuet.supabase.co"}/functions/v1/create-bulk-users`,{
         method:"POST",headers:{Authorization:`Bearer ${sess.session?.access_token ?? ""}`,"Content-Type":"application/json"},
         body:JSON.stringify({accounts:batch})
       });
@@ -629,7 +629,7 @@ function AdminPage({ me, setMessage }: { me: Profile; setMessage: (v: string) =>
     a.click();
     URL.revokeObjectURL(url);
   };
-  const uploadCsv = async (file: File) =>
+  const uploadCsv = async (file: File) => {
     try { const raw=await file.text(); const accounts=parseCsv(raw); await createBulk(accounts); }
     catch(e){setMessage(e instanceof Error?e.message:"CSV 읽기 실패");}
   };
